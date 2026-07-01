@@ -22,22 +22,24 @@
 let myVoice = null;
 
 /* p5.sound masking graph (names avoid p5 globals like noise()/filter()) ----- */
-let maskNoise  = null;   // pink noise, band-passed into the speech band
-let rumbleNoise = null;  // brown noise, low-passed for a subtle rumble
-let fftScope   = null;   // analyses the main output (i.e. the masking bed)
+let maskNoise = null; // pink noise, band-passed into the speech band
+let rumbleNoise = null; // brown noise, low-passed for a subtle rumble
+let fftScope = null; // analyses the main output (i.e. the masking bed)
 let noiseActive = false; // is the masking bed currently "on"?
 
 /* Speaking sequencer state -------------------------------------------------- */
-let speaking = false;     // a challenge is in progress (playing OR paused)
-let paused   = false;     // paused mid-challenge
-let speakQueue = [];      // [{ text, pitch, rate, voiceIndex }]
-let qIndex = 0;           // which pair we're on
-let gapTimer = null;      // setTimeout handle for the inter-word gap
-let pendingResume = false;// paused during a gap -> resume should re-fire speak
-let wordActive = false;   // true only while a word is actually being spoken
-                          // (drives the masking-bed swell -> the scope pulse)
+let speaking = false; // a challenge is in progress (playing OR paused)
+let paused = false; // paused mid-challenge
+let speakQueue = []; // [{ text, pitch, rate, voiceIndex }]
+let qIndex = 0; // which pair we're on
+let gapTimer = null; // setTimeout handle for the inter-word gap
+let pendingResume = false; // paused during a gap -> resume should re-fire speak
+let wordActive = false; // true only while a word is actually being spoken
+// (drives the masking-bed swell -> the scope pulse)
 
-function rand(min, max) { return min + Math.random() * (max - min); }
+function rand(min, max) {
+  return min + Math.random() * (max - min);
+}
 
 /* ---- init ---------------------------------------------------------------- */
 function initAudio() {
@@ -54,10 +56,14 @@ function initAudio() {
   // ...and defensively bind start/end-of-utterance ourselves. p5.speech only
   // wires these inside onvoiceschanged, which may never fire when voices are
   // cached — so we guarantee the sequencer + scope envelope stay in sync.
-  myVoice.utterance.onstart = () => { if (myVoice.onStart) myVoice.onStart(); };
-  myVoice.utterance.onend   = () => { if (myVoice.onEnd)   myVoice.onEnd();   };
+  myVoice.utterance.onstart = () => {
+    if (myVoice.onStart) myVoice.onStart();
+  };
+  myVoice.utterance.onend = () => {
+    if (myVoice.onEnd) myVoice.onEnd();
+  };
   myVoice.onStart = handleWordStart;
-  myVoice.onEnd   = handleWordEnd;
+  myVoice.onEnd = handleWordEnd;
 }
 
 /* Pick a random English voice index, or null to use the browser default. */
@@ -118,9 +124,11 @@ function onPlayToggle() {
   if (typeof userStartAudio === 'function') userStartAudio();
   ensureNoise();
 
-  if (!speaking)      startSpeaking();   // idle -> start
-  else if (paused)    resumeSpeaking();  // paused -> resume
-  else                pauseSpeaking();   // playing -> pause
+  if (!speaking)
+    startSpeaking(); // idle -> start
+  else if (paused)
+    resumeSpeaking(); // paused -> resume
+  else pauseSpeaking(); // playing -> pause
 }
 
 function replay() {
@@ -143,11 +151,11 @@ function newChallenge() {
 
 /* ---- sequencer ----------------------------------------------------------- */
 function buildSpeakQueue() {
-  speakQueue = challenge.pairs.map(p => ({
+  speakQueue = challenge.pairs.map((p) => ({
     text: p.word + ' ' + p.numberWord,
     pitch: rand(0.85, 1.25),
-    rate:  rand(0.85, 1.15),
-    voiceIndex: pickVoiceIndex()
+    rate: rand(0.85, 1.15),
+    voiceIndex: pickVoiceIndex(),
   }));
   qIndex = 0;
 }
@@ -166,7 +174,10 @@ function startSpeaking() {
 
 function speakCurrent() {
   if (!speaking || paused) return;
-  if (qIndex >= speakQueue.length) { finishSpeaking(); return; }
+  if (qIndex >= speakQueue.length) {
+    finishSpeaking();
+    return;
+  }
   const item = speakQueue[qIndex];
   if (item.voiceIndex != null) myVoice.setVoice(item.voiceIndex);
   myVoice.setPitch(item.pitch);
@@ -182,13 +193,19 @@ function handleWordStart() {
 
 /* Fires when the browser finishes (or cancels) an utterance. */
 function handleWordEnd() {
-  wordActive = false;                // ease the bed back down during the gap
-  if (!speaking || paused) return;   // ignore cancel-induced end events
+  wordActive = false; // ease the bed back down during the gap
+  if (!speaking || paused) return; // ignore cancel-induced end events
   qIndex++;
-  if (qIndex >= speakQueue.length) { finishSpeaking(); return; }
-  const gap = rand(140, 360);        // time-jittered gap between pairs
+  if (qIndex >= speakQueue.length) {
+    finishSpeaking();
+    return;
+  }
+  const gap = rand(140, 360); // time-jittered gap between pairs
   gapTimer = setTimeout(() => {
-    if (paused) { pendingResume = true; return; }
+    if (paused) {
+      pendingResume = true;
+      return;
+    }
     speakCurrent();
   }, gap);
 }
@@ -209,8 +226,11 @@ function stopSpeaking() {
   paused = false;
   pendingResume = false;
   wordActive = false;
-  if (gapTimer) { clearTimeout(gapTimer); gapTimer = null; }
-  if (myVoice) myVoice.stop();   // cancels the queue
+  if (gapTimer) {
+    clearTimeout(gapTimer);
+    gapTimer = null;
+  }
+  if (myVoice) myVoice.stop(); // cancels the queue
   noiseActive = false;
   playing = false;
   setLcd(false);
@@ -221,7 +241,11 @@ function pauseSpeaking() {
   playing = false;
   wordActive = false;
   noiseActive = false;
-  if (gapTimer) { clearTimeout(gapTimer); gapTimer = null; pendingResume = true; }
+  if (gapTimer) {
+    clearTimeout(gapTimer);
+    gapTimer = null;
+    pendingResume = true;
+  }
   if (myVoice) myVoice.pause();
   setLcd(false);
 }
@@ -232,5 +256,8 @@ function resumeSpeaking() {
   noiseActive = true;
   setLcd(true);
   if (myVoice) myVoice.resume();
-  if (pendingResume) { pendingResume = false; speakCurrent(); }
+  if (pendingResume) {
+    pendingResume = false;
+    speakCurrent();
+  }
 }
