@@ -1,0 +1,25 @@
+{
+  "name": "london-isp-midterm-ex2",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ferric audio CAPTCHA (p5.js)",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node serve.js",
+    "check": "npm run lint && npm run test && npm run format:check",
+    "lint": "npm run lint:js && npm run lint:html",
+    "lint:fix": "npm run lint:js -- --fix && npm run format",
+    "lint:js": "eslint \"app/js/**/*.js\" \"serve.js\"",
+    "lint:html": "htmlhint \"app/**/*.html\"",
+    "format": "prettier --write \"app/**/*.{js,css,html}\" \"serve.js\"",
+    "format:check": "prettier --check \"app/**/*.{js,css,html}\" \"serve.js\"",
+    "test": "echo \"No tests yet — add a runner and update this script.\" && exit 0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0",
+    "htmlhint": "^1.1.4",
+    "prettier": "^3.4.1"
+  }
+}
