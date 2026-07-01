@@ -54,19 +54,19 @@
 
 /* ---- Ferric design tokens (see design_handoff_audio_captcha/README.md) ---- */
 :root {
-  --bg: #0c0d10;
-  --accent: #2ad4c8; /* teal — LIVE / focus / verified only     */
-  --accent-tint: rgba(42, 212, 200, 0.12);
-  --accent-line: rgba(42, 212, 200, 0.35);
-  --accent-glow: rgba(42, 212, 200, 0.4);
-  --accent-text: #eafffb;
-  --ink: #e7eaee; /* primary text                            */
-  --ink-dim: #8b919a; /* secondary text                          */
-  --edge: #14171b; /* panel/inset borders                     */
-  --danger: #e85d5d;
-  --warn: #e8b54d;
-  --sans: 'Hanken Grotesk', system-ui, sans-serif;
-  --mono: 'Spline Sans Mono', ui-monospace, monospace;
+  --bg: #0c0d10; /* page background */
+  --accent: #2ad4c8; /* teal — LIVE / focus / verified only */
+  --accent-tint: rgba(42, 212, 200, 0.12); /* accent fill (chips, buttons) */
+  --accent-line: rgba(42, 212, 200, 0.35); /* accent borders / focus rings */
+  --accent-glow: rgba(42, 212, 200, 0.4); /* accent shadows / glows */
+  --accent-text: #eafffb; /* text on accent surfaces */
+  --ink: #e7eaee; /* primary text */
+  --ink-dim: #8b919a; /* secondary text */
+  --edge: #14171b; /* panel / inset borders */
+  --danger: #e85d5d; /* verify: mismatch */
+  --warn: #e8b54d; /* verify: incomplete */
+  --sans: 'Hanken Grotesk', system-ui, sans-serif; /* UI font */
+  --mono: 'Spline Sans Mono', ui-monospace, monospace; /* readouts / inputs */
 }
 * {
   box-sizing: border-box;
