@@ -11,26 +11,43 @@
 
 /* Word bank — short, common, phonetically distinct nouns (easy to hear). */
 const WORDS = [
-  'apple', 'blue', 'table', 'river', 'chair', 'tiger', 'cloud', 'stone',
-  'bread', 'lemon', 'glass', 'horse', 'plant', 'brick', 'ocean', 'candle',
-  'window', 'garden', 'pencil', 'rocket'
+  'apple',
+  'blue',
+  'table',
+  'river',
+  'chair',
+  'tiger',
+  'cloud',
+  'stone',
+  'bread',
+  'lemon',
+  'glass',
+  'horse',
+  'plant',
+  'brick',
+  'ocean',
+  'candle',
+  'window',
+  'garden',
+  'pencil',
+  'rocket',
 ];
 
 /* Number bank — spoken word + the digit we compare against. */
 const NUMBERS = [
-  { word: 'one',   digit: '1' },
-  { word: 'two',   digit: '2' },
+  { word: 'one', digit: '1' },
+  { word: 'two', digit: '2' },
   { word: 'three', digit: '3' },
-  { word: 'four',  digit: '4' },
-  { word: 'five',  digit: '5' },
-  { word: 'six',   digit: '6' },
+  { word: 'four', digit: '4' },
+  { word: 'five', digit: '5' },
+  { word: 'six', digit: '6' },
   { word: 'seven', digit: '7' },
   { word: 'eight', digit: '8' },
-  { word: 'nine',  digit: '9' }
+  { word: 'nine', digit: '9' },
 ];
 
-const N_TARGETS = 3;   // shown on screen  -> answer length
-const N_FILLERS = 2;   // decoys, spoken but not shown
+const N_TARGETS = 3; // shown on screen  -> answer length
+const N_FILLERS = 2; // decoys, spoken but not shown
 
 /* Fisher–Yates, returns a shuffled COPY (never mutates the source bank). */
 function shuffled(arr) {
@@ -46,9 +63,7 @@ function shuffled(arr) {
 function generateChallenge() {
   const targetWords = shuffled(WORDS).slice(0, N_TARGETS);
 
-  const fillerWords = shuffled(
-    WORDS.filter(w => !targetWords.includes(w))
-  ).slice(0, N_FILLERS);
+  const fillerWords = shuffled(WORDS.filter((w) => !targetWords.includes(w))).slice(0, N_FILLERS);
 
   // Spoken order mixes targets + fillers so position gives nothing away.
   const allChallengeWords = shuffled([...targetWords, ...fillerWords]);
@@ -59,12 +74,12 @@ function generateChallenge() {
   const pairs = allChallengeWords.map((word, i) => ({
     word,
     numberWord: chosenNumbers[i].word,
-    numberDigit: chosenNumbers[i].digit
+    numberDigit: chosenNumbers[i].digit,
   }));
 
   // Answer = digits after each TARGET word, in the target-word order shown.
   const answer = targetWords
-    .map(targetWord => pairs.find(p => p.word === targetWord).numberDigit)
+    .map((targetWord) => pairs.find((p) => p.word === targetWord).numberDigit)
     .join('');
 
   challenge = { targetWords, pairs, answer };
