@@ -43,11 +43,24 @@ function rand(min, max) {
 
 /* ---- init ---------------------------------------------------------------- */
 function initAudio() {
-  if (typeof p5 === 'undefined' || !p5.Speech) {
+  // p5.Speech's constructor touches window.speechSynthesis / SpeechSynthesisUtterance,
+  // so in a browser without Web Speech support `new p5.Speech()` can throw. Guard
+  // and degrade gracefully (myVoice stays null; the app still renders + verifies).
+  if (
+    typeof p5 === 'undefined' ||
+    !p5.Speech ||
+    typeof window.SpeechSynthesisUtterance === 'undefined'
+  ) {
     console.warn('p5.speech unavailable — TTS will not work in this browser.');
     return;
   }
-  myVoice = new p5.Speech();
+  try {
+    myVoice = new p5.Speech();
+  } catch (err) {
+    console.warn('p5.speech failed to initialise — TTS disabled.', err);
+    myVoice = null;
+    return;
+  }
 
   // Prime the voice list (some browsers only populate on demand)...
   if (window.speechSynthesis && window.speechSynthesis.getVoices) {
@@ -56,12 +69,14 @@ function initAudio() {
   // ...and defensively bind start/end-of-utterance ourselves. p5.speech only
   // wires these inside onvoiceschanged, which may never fire when voices are
   // cached — so we guarantee the sequencer + scope envelope stay in sync.
-  myVoice.utterance.onstart = () => {
-    if (myVoice.onStart) myVoice.onStart();
-  };
-  myVoice.utterance.onend = () => {
-    if (myVoice.onEnd) myVoice.onEnd();
-  };
+  if (myVoice.utterance) {
+    myVoice.utterance.onstart = () => {
+      if (myVoice.onStart) myVoice.onStart();
+    };
+    myVoice.utterance.onend = () => {
+      if (myVoice.onEnd) myVoice.onEnd();
+    };
+  }
   myVoice.onStart = handleWordStart;
   myVoice.onEnd = handleWordEnd;
 }

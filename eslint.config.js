@@ -29,27 +29,74 @@ const p5Api = {
   getAudioContext: 'readonly',
 };
 
-// Our own top-level symbols, shared across the app/js files. Writable because
-// several (playing, volume, challenge, the audio handles…) are reassigned.
-const projectGlobals = Object.fromEntries(
-  [
-    // state + handles (main.js / audio.js)
-    'challenge', 'playing', 'volume', 'phase', 'scopeEnv',
-    'myVoice', 'maskNoise', 'rumbleNoise', 'fftScope', 'noiseActive',
-    'speaking', 'paused', 'speakQueue', 'qIndex', 'gapTimer',
-    'pendingResume', 'wordActive',
-    // challenge.js constants
-    'WORDS', 'NUMBERS', 'N_TARGETS', 'N_FILLERS',
-    // functions (all files)
-    'shuffled', 'generateChallenge', 'rand', 'initAudio', 'pickVoiceIndex',
-    'ensureNoise', 'updateNoiseAmp', 'onPlayToggle', 'replay', 'newChallenge',
-    'buildSpeakQueue', 'startSpeaking', 'speakCurrent', 'handleWordStart',
-    'handleWordEnd', 'finishSpeaking', 'stopSpeaking', 'pauseSpeaking',
-    'resumeSpeaking', 'renderFields', 'boxes', 'onType', 'onKey',
-    'wireControls', 'wireKnob', 'updateVolumeUI', 'setStatus', 'setLcd',
-    'verifyChallenge', 'setup', 'draw',
-  ].map((name) => [name, 'writable'])
-);
+// Mutable shared state/handles — reassigned across files, so writable.
+const mutableState = [
+  'challenge',
+  'playing',
+  'volume',
+  'phase',
+  'scopeEnv',
+  'myVoice',
+  'maskNoise',
+  'rumbleNoise',
+  'fftScope',
+  'noiseActive',
+  'speaking',
+  'paused',
+  'speakQueue',
+  'qIndex',
+  'gapTimer',
+  'pendingResume',
+  'wordActive',
+];
+
+// Constants + functions — never reassigned, so readonly. Keeping these readonly
+// lets ESLint flag accidental clobbering (e.g. `generateChallenge = …`).
+const constantsAndFns = [
+  // challenge.js constants
+  'WORDS',
+  'NUMBERS',
+  'N_TARGETS',
+  'N_FILLERS',
+  // functions (all files)
+  'shuffled',
+  'generateChallenge',
+  'rand',
+  'initAudio',
+  'pickVoiceIndex',
+  'ensureNoise',
+  'updateNoiseAmp',
+  'onPlayToggle',
+  'replay',
+  'newChallenge',
+  'buildSpeakQueue',
+  'startSpeaking',
+  'speakCurrent',
+  'handleWordStart',
+  'handleWordEnd',
+  'finishSpeaking',
+  'stopSpeaking',
+  'pauseSpeaking',
+  'resumeSpeaking',
+  'renderFields',
+  'boxes',
+  'onType',
+  'onKey',
+  'wireControls',
+  'wireKnob',
+  'updateVolumeUI',
+  'setStatus',
+  'setLcd',
+  'verifyChallenge',
+  'setup',
+  'draw',
+];
+
+// Our own top-level symbols, shared across the app/js files (p5 global mode).
+const projectGlobals = {
+  ...Object.fromEntries(mutableState.map((name) => [name, 'writable'])),
+  ...Object.fromEntries(constantsAndFns.map((name) => [name, 'readonly'])),
+};
 
 module.exports = [
   { ignores: ['libraries/**', 'fonts/**', 'examples_p5_speech/**', 'node_modules/**'] },
@@ -73,9 +120,9 @@ module.exports = [
     },
   },
 
-  // Node dev server
+  // Node scripts: the dev server + this config file itself
   {
-    files: ['serve.js'],
+    files: ['serve.js', 'eslint.config.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',
