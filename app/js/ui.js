@@ -75,9 +75,13 @@ function wireKnob() {
     updateVolumeUI();
     if (myVoice) myVoice.setVolume(volume); // applies to the NEXT word
   });
-  knob.addEventListener('pointerup', () => {
+  const stopDragging = () => {
     dragging = false;
-  });
+  };
+  knob.addEventListener('pointerup', stopDragging);
+  // Also release on pointercancel (system gesture / touch interruption),
+  // otherwise the knob can stay stuck in the dragging state.
+  knob.addEventListener('pointercancel', stopDragging);
 }
 
 function updateVolumeUI() {
