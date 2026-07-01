@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "audio-captcha",
+      "runtimeExecutable": "/Users/davidcardozo/.local/share/mise/installs/node/24.16.0/bin/node",
+      "runtimeArgs": ["serve.js"],
+      "port": 5173
+    }
+  ]
+}

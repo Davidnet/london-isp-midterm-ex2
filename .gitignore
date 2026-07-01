@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+
+# Vendored p5.speech example sketches — reference only, not part of the app
+examples_p5_speech/
