@@ -1,0 +1,8 @@
+# Vendored third-party code — never reformat
+libraries/
+fonts/
+examples_p5_speech/
+node_modules/
+
+# Design handoff reference (leave the original formatting intact)
+design_handoff_audio_captcha/
