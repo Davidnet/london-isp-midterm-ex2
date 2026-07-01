@@ -1,83 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Audio CAPTCHA — Ferric (p5.js)</title>
-<link rel="stylesheet" href="css/styles.css" />
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Audio CAPTCHA — Ferric (p5.js)</title>
+    <link rel="stylesheet" href="css/styles.css" />
 
-<!-- Local libraries (vendored under /libraries) ------------------------------
+    <!-- Local libraries (vendored under /libraries) ------------------------------
      p5 core -> p5.sound (Noise/Filter/FFT) -> p5.speech (TTS). Order matters:
      the addons attach onto the p5 global, so they must load after p5.js.       -->
-<script src="../libraries/p5/p5.js"></script>
-<script src="../libraries/p5/addons/p5.sound.js"></script>
-<script src="../libraries/p5/addons/p5.speech.js"></script>
-</head>
-<body>
+    <script src="../libraries/p5/p5.js"></script>
+    <script src="../libraries/p5/addons/p5.sound.js"></script>
+    <script src="../libraries/p5/addons/p5.speech.js"></script>
+  </head>
+  <body>
+    <div class="plate">
+      <!-- corner screws (decorative) -->
+      <div class="screw" style="top: 11px; left: 11px"></div>
+      <div class="screw" style="top: 11px; right: 11px"></div>
+      <div class="screw" style="bottom: 11px; left: 11px"></div>
+      <div class="screw" style="bottom: 11px; right: 11px"></div>
 
-<div class="plate">
-  <!-- corner screws (decorative) -->
-  <div class="screw" style="top:11px;left:11px"></div>
-  <div class="screw" style="top:11px;right:11px"></div>
-  <div class="screw" style="bottom:11px;left:11px"></div>
-  <div class="screw" style="bottom:11px;right:11px"></div>
-
-  <!-- header -->
-  <div class="head">
-    <div>
-      <div class="eyebrow">Audio&nbsp;CAPTCHA</div>
-      <div class="subhead">Listen, then fill each box.</div>
-    </div>
-    <button class="btn-ghost" id="btn-new">↻&nbsp;NEW&nbsp;CHALLENGE</button>
-  </div>
-
-  <!-- LCD oscilloscope -->
-  <div class="lcd">
-    <div class="lcd-top">
-      <span id="lcd-status" style="display:flex;align-items:center;gap:7px;color:#4a6b64">
-        <span class="dot" style="background:#25423c"></span>READY
-      </span>
-      <span class="lcd-tag">SCRAMBLED&nbsp;SIGNAL</span>
-    </div>
-    <canvas id="scope"></canvas>
-  </div>
-
-  <!-- transport -->
-  <div class="transport">
-    <button class="t-round" id="btn-replay" title="Repeat message">↺</button>
-    <button class="t-play" id="btn-play" title="Play / pause">
-      <svg width="24" height="26" viewBox="0 0 24 26" style="margin-left:3px"><polygon points="4,3 21,13 4,23" fill="var(--accent-text)"></polygon></svg>
-    </button>
-    <div class="spacer"></div>
-    <div class="knob-wrap">
-      <div class="knob" id="knob">
-        <div class="knob-face"></div>
-        <div class="knob-ind" id="knob-ind"></div>
+      <!-- header -->
+      <div class="head">
+        <div>
+          <div class="eyebrow">Audio&nbsp;CAPTCHA</div>
+          <div class="subhead">Listen, then fill each box.</div>
+        </div>
+        <button class="btn-ghost" id="btn-new">↻&nbsp;NEW&nbsp;CHALLENGE</button>
       </div>
-      <span class="knob-label" id="vol-label">VOL&nbsp;62%</span>
+
+      <!-- LCD oscilloscope -->
+      <div class="lcd">
+        <div class="lcd-top">
+          <span
+            id="lcd-status"
+            style="display: flex; align-items: center; gap: 7px; color: #4a6b64"
+          >
+            <span class="dot" style="background: #25423c"></span>READY
+          </span>
+          <span class="lcd-tag">SCRAMBLED&nbsp;SIGNAL</span>
+        </div>
+        <canvas id="scope"></canvas>
+      </div>
+
+      <!-- transport -->
+      <div class="transport">
+        <button class="t-round" id="btn-replay" title="Repeat message">↺</button>
+        <button class="t-play" id="btn-play" title="Play / pause">
+          <svg width="24" height="26" viewBox="0 0 24 26" style="margin-left: 3px">
+            <polygon points="4,3 21,13 4,23" fill="var(--accent-text)"></polygon>
+          </svg>
+        </button>
+        <div class="spacer"></div>
+        <div class="knob-wrap">
+          <div class="knob" id="knob">
+            <div class="knob-face"></div>
+            <div class="knob-ind" id="knob-ind"></div>
+          </div>
+          <span class="knob-label" id="vol-label">VOL&nbsp;62%</span>
+        </div>
+      </div>
+
+      <!-- answer — each target word labels the box its spoken number goes in -->
+      <div class="answer">
+        <span class="answer-label">Type the number spoken after each word</span>
+        <div class="fields" id="fields"><!-- filled by ui.js --></div>
+      </div>
+
+      <!-- footer -->
+      <div class="foot">
+        <div class="badge" id="badge">
+          <span class="dot"></span><span id="badge-label">Awaiting answer</span>
+        </div>
+        <div class="spacer"></div>
+        <button class="verify" id="btn-verify">Verify</button>
+      </div>
     </div>
-  </div>
 
-  <!-- answer — each target word labels the box its spoken number goes in -->
-  <div class="answer">
-    <span class="answer-label">Type the number spoken after each word</span>
-    <div class="fields" id="fields"><!-- filled by ui.js --></div>
-  </div>
-
-  <!-- footer -->
-  <div class="foot">
-    <div class="badge" id="badge"><span class="dot"></span><span id="badge-label">Awaiting answer</span></div>
-    <div class="spacer"></div>
-    <button class="verify" id="btn-verify">Verify</button>
-  </div>
-</div>
-
-<!-- App modules (classic scripts, shared global scope; p5 runs in global mode).
+    <!-- App modules (classic scripts, shared global scope; p5 runs in global mode).
      Load order: state/challenge -> audio -> ui -> verify -> main (setup/draw).  -->
-<script src="js/challenge.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/verify.js"></script>
-<script src="js/main.js"></script>
-</body>
+    <script src="js/challenge.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/verify.js"></script>
+    <script src="js/main.js"></script>
+  </body>
 </html>

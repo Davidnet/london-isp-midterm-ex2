@@ -6,7 +6,9 @@
    check could drop in here later without touching the rest of the app.
    ========================================================================== */
 function verifyChallenge() {
-  const guess = boxes().map(b => b.value).join('');
+  const guess = boxes()
+    .map((b) => b.value)
+    .join('');
   if (guess.length < challenge.answer.length) return setStatus('incomplete');
   setStatus(guess === challenge.answer ? 'pass' : 'fail');
 }
