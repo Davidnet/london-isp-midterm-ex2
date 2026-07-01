@@ -4,5 +4,9 @@
 # Node
 node_modules/
 
+# Build output (make)
+build/
+london-isp-midterm-ex2.zip
+
 # Vendored p5.speech example sketches — reference only, not part of the app
 examples_p5_speech/
