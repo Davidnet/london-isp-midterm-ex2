@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Audio CAPTCHA — p5.js scaffold (Ferric)</title>
+
+<!-- ==========================================================================
+     AUDIO CAPTCHA · p5.js + p5.sound + p5.speech
+     ==========================================================================
+     This is a RUNNABLE, ANNOTATED scaffold that recreates the "Ferric"
+     design mockup in real p5.js. Open it in a browser and it works as a
+     visual mockup out of the box (the oscilloscope draws a synthetic
+     "scrambled" wave). Everything a bot-resistant audio CAPTCHA needs is
+     stubbed with `TODO (Claude Code)` markers so you can wire in real audio.
+
+     ARCHITECTURE
+     ------------
+     - UI chrome (panel, screws, LCD frame, knob, boxes) = HTML + CSS.
+       Keeping the chrome in the DOM (instead of drawing it on the canvas)
+       makes the inputs real, focusable, and accessible.
+     - The oscilloscope = a single <canvas> driven by the p5 draw() loop.
+       When a real SoundFile is playing it reads p5.FFT.waveform();
+       otherwise it falls back to a synthesized scramble wave so the UI
+       still looks alive during development.
+     - Audio playback + volume = p5.SoundFile (loadSound / play / setVolume).
+     - Challenge generation / anti-bot scrambling = see the big
+       ANNOTATION block near loadChallenge() below.
+
+     LIBRARIES (CDN)
+     ---------------
+     p5.js .......... core + canvas
+     p5.sound ....... loadSound, FFT, filters, playback  (bundled w/ p5 below)
+     p5.speech ...... Web Speech TTS/STT wrapper (loaded separately)
+     ========================================================================== -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/addons/p5.sound.min.js"></script>
+<!-- p5.speech: https://idmnyu.github.io/p5.js-speech/ -->
+<script src="https://cdn.jsdelivr.net/gh/IDMNYU/p5.js-speech@master/lib/p5.speech.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  /* ---- Ferric design tokens (see README.md > Design Tokens) ------------- */
+  :root{
+    --bg:#0C0D10;
+    --accent:#2AD4C8;            /* teal — LIVE / focus / verified only     */
+    --accent-tint:rgba(42,212,200,.12);
+    --accent-line:rgba(42,212,200,.35);
+    --accent-glow:rgba(42,212,200,.40);
+    --accent-text:#EAFFFB;
+    --ink:#E7EAEE;              /* primary text                            */
+    --ink-dim:#8b919a;          /* secondary text                          */
+    --edge:#14171B;             /* panel/inset borders                     */
+    --danger:#E85D5D;
+    --warn:#E8B54D;
+    --sans:'Hanken Grotesk',system-ui,sans-serif;
+    --mono:'Spline Sans Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;color:var(--ink);font-family:var(--sans);
+    display:flex;align-items:center;justify-content:center;padding:48px 24px;
+    background:radial-gradient(120% 90% at 50% -10%, #16181d, var(--bg) 60%), var(--bg);
+  }
+  @keyframes ferricPulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* brushed-graphite instrument plate */
+  .plate{
+    width:100%;max-width:640px;position:relative;padding:28px 28px 26px;
+    border:1px solid var(--edge);border-radius:16px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0) 6%, rgba(0,0,0,.16) 94%, rgba(0,0,0,.26)),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, rgba(0,0,0,.02) 1px 3px),
+      linear-gradient(180deg,#3A3F47,#2B2F35);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 9px rgba(0,0,0,.45), 0 34px 70px -24px rgba(0,0,0,.75);
+  }
+  .screw{position:absolute;width:13px;height:13px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#7A8088,#34383E 72%);
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.45),0 1px 1px rgba(0,0,0,.5)}
+  .screw::after{content:'';position:absolute;inset:0;margin:auto;width:7px;height:1.5px;background:rgba(0,0,0,.5)}
+
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:0 6px;margin-bottom:18px}
+  .eyebrow{font-weight:700;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#B3B9C1}
+  .subhead{font-size:13px;color:var(--ink-dim);margin-top:6px}
+  .btn-ghost{display:flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--edge);border-radius:8px;
+    background:linear-gradient(180deg,#33373E,#262A30);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 3px 5px rgba(0,0,0,.4);
+    cursor:pointer;color:#B3B9C1;font-family:var(--mono);font-size:10px;letter-spacing:.14em}
+  .btn-ghost:hover{filter:brightness(1.12)}
+
+  /* LCD scope */
+  .lcd{position:relative;overflow:hidden;border-radius:9px;padding:12px 14px 10px;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, rgba(0,0,0,0) 1px 3px),
+      radial-gradient(120% 100% at 50% 0%, rgba(42,212,200,.08), rgba(0,0,0,0) 60%),
+      linear-gradient(180deg,#08130F,#040B09);
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.85), inset 0 0 0 1px rgba(42,212,200,.14)}
+  .lcd-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em}
+  .lcd-tag{color:rgba(42,212,200,.5)}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  #scope{display:block;width:100%;height:116px}
+
+  /* transport */
+  .transport{display:flex;align-items:center;gap:16px;margin:20px 4px 22px}
+  .t-round{width:52px;height:52px;flex:none;border:1px solid var(--edge);border-radius:50%;
+    background:linear-gradient(180deg,#33373E,#262A30);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 3px 5px rgba(0,0,0,.4);
+    cursor:pointer;color:#B3B9C1;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0}
+  .t-round:hover{filter:brightness(1.12)}
+  .t-play{width:66px;height:66px;flex:none;border:1px solid var(--edge);border-radius:50%;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 30%,#2A2E34),#23262B);
+    box-shadow:0 0 16px var(--accent-glow),inset 0 1px 0 rgba(255,255,255,.12),0 4px 8px rgba(0,0,0,.5);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .t-play:hover{filter:brightness(1.08)}
+  .spacer{flex:1}
+  .knob-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .knob{width:56px;height:56px;position:relative;border-radius:50%;cursor:ns-resize;touch-action:none;
+    background:repeating-conic-gradient(#464C55 0 6deg,#2A2E34 6deg 12deg);
+    box-shadow:0 3px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
+  .knob-face{position:absolute;inset:7px;border-radius:50%;
+    background:radial-gradient(circle at 38% 30%,#474C54,#20232A 74%);box-shadow:inset 0 1px 2px rgba(255,255,255,.15)}
+  .knob-ind{position:absolute;left:50%;top:6px;width:3px;height:15px;background:var(--accent);border-radius:2px;
+    transform-origin:50% 22px;box-shadow:0 0 6px var(--accent-line)}
+  .knob-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#B3B9C1}
+
+  /* target words */
+  .targets{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 14px;
+    border:1px solid var(--edge);border-radius:9px;
+    background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.14));box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .targets-label{font-weight:600;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);flex:none}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 10px;border:1px solid var(--accent-line);
+    border-radius:999px;background:var(--accent-tint);font-family:var(--mono);font-size:13px;color:var(--ink)}
+  .chip b{font-weight:700;font-size:10px;color:var(--accent)}
+
+  /* answer */
+  .answer{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+  .answer-label{font-weight:600;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);padding-left:2px}
+  .boxes{display:flex;gap:12px}
+  .box{flex:1 1 0;min-width:0;height:62px;border:1px solid var(--edge);border-radius:8px;
+    background:linear-gradient(180deg,#15171B,#23262B);box-shadow:inset 0 2px 4px rgba(0,0,0,.8);
+    color:var(--ink);font-family:var(--mono);font-weight:500;font-size:28px;text-align:center;caret-color:var(--accent);outline:none}
+  .box:focus{border-color:var(--accent);box-shadow:0 0 12px var(--accent-line),inset 0 2px 4px rgba(0,0,0,.8)}
+
+  /* footer */
+  .foot{display:flex;align-items:center;gap:14px;padding:0 2px}
+  .badge{display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border-radius:999px;
+    background:rgba(255,255,255,.04);border:1px solid var(--edge)}
+  .badge .dot{box-shadow:none;background:#5A6068}
+  .badge span{font-weight:700;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#B3B9C1}
+  .verify{border:1px solid var(--edge);border-radius:8px;padding:14px 30px;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 28%,#2A2E34),#23262B);
+    box-shadow:0 0 12px var(--accent-glow),inset 0 1px 0 rgba(255,255,255,.12);
+    cursor:pointer;color:var(--accent-text);font-weight:700;font-size:14px;letter-spacing:.04em}
+  .verify:hover{filter:brightness(1.09)}
+</style>
+</head>
+<body>
+
+<div class="plate">
+  <!-- corner screws (decorative) -->
+  <div class="screw" style="top:11px;left:11px"></div>
+  <div class="screw" style="top:11px;right:11px"></div>
+  <div class="screw" style="bottom:11px;left:11px"></div>
+  <div class="screw" style="bottom:11px;right:11px"></div>
+
+  <!-- header -->
+  <div class="head">
+    <div>
+      <div class="eyebrow">Audio&nbsp;CAPTCHA</div>
+      <div class="subhead">Type the number that follows each target word, in order.</div>
+    </div>
+    <button class="btn-ghost" id="btn-new">↻&nbsp;NEW&nbsp;CHALLENGE</button>
+  </div>
+
+  <!-- LCD oscilloscope -->
+  <div class="lcd">
+    <div class="lcd-top">
+      <span id="lcd-status" style="display:flex;align-items:center;gap:7px;color:#4a6b64">
+        <span class="dot" style="background:#25423c"></span>READY
+      </span>
+      <span class="lcd-tag">SCRAMBLED&nbsp;SIGNAL</span>
+    </div>
+    <canvas id="scope"></canvas>
+  </div>
+
+  <!-- transport -->
+  <div class="transport">
+    <button class="t-round" id="btn-replay" title="Repeat message">↺</button>
+    <button class="t-play" id="btn-play" title="Play / pause">
+      <svg width="24" height="26" viewBox="0 0 24 26" style="margin-left:3px"><polygon points="4,3 21,13 4,23" fill="var(--accent-text)"></polygon></svg>
+    </button>
+    <div class="spacer"></div>
+    <div class="knob-wrap">
+      <div class="knob" id="knob">
+        <div class="knob-face"></div>
+        <div class="knob-ind" id="knob-ind"></div>
+      </div>
+      <span class="knob-label" id="vol-label">VOL&nbsp;62%</span>
+    </div>
+  </div>
+
+  <!-- target words -->
+  <div class="targets">
+    <span class="targets-label">Target&nbsp;words</span>
+    <div class="chips" id="chips"><!-- filled by JS --></div>
+  </div>
+
+  <!-- answer -->
+  <div class="answer">
+    <span class="answer-label">The number after each — in order</span>
+    <div class="boxes" id="boxes"><!-- filled by JS --></div>
+  </div>
+
+  <!-- footer -->
+  <div class="foot">
+    <div class="badge" id="badge"><span class="dot"></span><span id="badge-label">Awaiting answer</span></div>
+    <div class="spacer"></div>
+    <button class="verify" id="btn-verify">Verify</button>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   STATE
+   ========================================================================== */
+let challenge = null;   // { targets:[{word,n}], answer:'381', pairs:[...] }
+let playing   = false;
+let volume    = 0.62;
+let phase     = 0;      // animation phase for the fallback scramble wave
+
+/* p5 / p5.sound handles ---------------------------------------------------- */
+let sound = null;       // p5.SoundFile — the (scrambled) challenge clip
+let fft   = null;       // p5.FFT — feeds the oscilloscope waveform
+
+/* ==========================================================================
+   CHALLENGE GENERATION  +  ⚠ ANTI-BOT SCRAMBLING  (the core of the CAPTCHA)
+   --------------------------------------------------------------------------
+   The challenge: the clip reads several "word number" pairs. The user must
+   type the number that follows each TARGET word, in order.
+       pairs  = apple 9, blue 3, table 5, river 8, chair 1
+       target = blue, river, chair   ->   answer = 3 8 1
+   Targets are shown on-screen; the full pair list is ONLY in the audio, so a
+   bot must actually transcribe scrambled speech to solve it.
+
+   THREE WAYS TO PRODUCE THE AUDIO — pick per your pipeline:
+
+   (A) Pre-recorded .wav  ── your stated plan
+       Record the pairs yourself, then SCRAMBLE the file so ASR fails but
+       humans still parse it. Scramble = p5.sound / Web Audio DSP, e.g.:
+         • pitch-shift / vary playbackRate per word
+         • overlay low-level babble or pink noise (p5.Noise)
+         • band-pass + slight reverb (p5.Reverb, p5.Filter)
+         • time-jitter the gaps between words
+       NOTE: this scrambling is p5.SOUND DSP — NOT p5.speech. p5.speech is
+       only TTS/STT; it does not process an existing file.
+
+   (B) Synthesize with p5.speech (TTS)
+       Speak the pairs with p5.speech (p5.Speech / .speak), record the tab's
+       audio, then scramble as in (A). Lets you randomize challenges server-
+       lessly, but browser TTS is CLEAN and easy for ASR — you MUST scramble.
+
+   (C) Hybrid: p5.speech TTS  ->  MediaStream  ->  p5.sound DSP  ->  output
+       Route TTS through a Web Audio graph so scramble is applied live before
+       it ever hits the speakers. Best anti-bot posture (no clean file exists).
+
+   TODO (Claude Code): implement one path in loadChallenge() below. Keep the
+   on-screen `targets` in sync with whatever pairs the audio actually speaks.
+   ========================================================================== */
+function makeChallenge() {
+  // Demo data mirrors the design mock. Replace with real randomized pairs.
+  const targets = [
+    { word: 'blue',  n: 1 },
+    { word: 'river', n: 2 },
+    { word: 'chair', n: 3 },
+  ];
+  const answer = '381';                 // the numbers spoken after each target
+  return { targets, answer };
+}
+
+function loadChallenge() {
+  challenge = makeChallenge();
+  renderChips();
+  renderBoxes();
+  setStatus('idle');
+
+  // TODO (Claude Code): build + load the (scrambled) audio for this challenge.
+  //   const raw = loadSound('challenges/audio_challenge.wav', () => {
+  //     sound = applyScramble(raw);   // your p5.sound DSP chain (path A)
+  //     fft   = new p5.FFT(0.8, 512);
+  //     fft.setInput(sound);
+  //     sound.setVolume(volume);
+  //   });
+  // Until real audio is wired, the scope draws a synthetic scramble wave.
+}
+
+/* Example DSP scaffold for path (A). Wire real nodes in Claude Code. -------- */
+function applyScramble(srcSoundFile) {
+  // const noise = new p5.Noise('pink'); noise.amp(0.04); noise.start();
+  // const filter = new p5.Filter('bandpass'); filter.set(1400, 1.2);
+  // const reverb = new p5.Reverb();
+  // srcSoundFile.disconnect(); srcSoundFile.connect(filter);
+  // reverb.process(srcSoundFile, 0.6, 2);
+  // srcSoundFile.rate(random(0.92, 1.08)); // subtle per-play pitch jitter
+  return srcSoundFile;
+}
+
+/* ==========================================================================
+   p5 LIFECYCLE  (global mode)
+   ========================================================================== */
+function setup() {
+  // Canvas is parented to the LCD <canvas> slot so CSS controls its size.
+  const slot = document.getElementById('scope');
+  const c = createCanvas(slot.clientWidth, slot.clientHeight);
+  c.parent(slot.parentElement);
+  c.elt.style.cssText = 'display:block;width:100%;height:116px';
+  slot.remove();               // replace the placeholder canvas with p5's
+  c.elt.id = 'scope';
+
+  loadChallenge();
+  wireControls();
+  window.addEventListener('resize', () =>
+    resizeCanvas(document.getElementById('scope').clientWidth, height));
+}
+
+function draw() {
+  clear();
+  const w = width, h = height, mid = h / 2;
+
+  // baseline
+  stroke(42, 212, 200, 36); strokeWeight(1);
+  line(0, mid, w, mid);
+
+  // waveform: real FFT when audio plays, else synthetic scramble wave
+  const amp = (playing ? 1 : 0.05) * (0.3 + 0.7 * volume) * h * 0.42;
+  stroke(42, 212, 200); strokeWeight(2); noFill();
+
+  if (playing && fft) {
+    // ---- REAL SIGNAL PATH -------------------------------------------------
+    const wave = fft.waveform();        // Float[-1..1]
+    beginShape();
+    for (let i = 0; i < wave.length; i++) {
+      const x = map(i, 0, wave.length - 1, 0, w);
+      vertex(x, mid - wave[i] * amp);
+    }
+    endShape();
+  } else {
+    // ---- FALLBACK / MOCK PATH (no real audio yet) -------------------------
+    beginShape();
+    for (let x = 0; x <= w; x += 2) {
+      const p = x / w;
+      let y = Math.sin(p * 20 + phase * 3.1) * 0.5
+            + Math.sin(p * 46 - phase * 2.0) * 0.28
+            + Math.sin(p * 9  + phase * 1.2) * 0.35;
+      const nz = (Math.sin(x * 127.1 + phase * 13.0) * 43758.5453) % 1;
+      y += nz * 0.6 * 0.9;              // 0.6 = scramble intensity
+      y *= 0.55 + 0.45 * Math.sin(p * 7 - phase * 1.5);
+      vertex(x, mid - y * amp);
+    }
+    endShape();
+  }
+
+  phase += playing ? 0.05 : 0.006;
+}
+
+/* ==========================================================================
+   TRANSPORT + CONTROLS
+   ========================================================================== */
+function wireControls() {
+  document.getElementById('btn-play').onclick   = togglePlay;
+  document.getElementById('btn-replay').onclick = replay;
+  document.getElementById('btn-new').onclick    = () => { loadChallenge(); startPlay(); };
+  document.getElementById('btn-verify').onclick = verify;
+  wireKnob();
+  updateVolumeUI();
+}
+
+function togglePlay() { playing ? stopPlay() : startPlay(); }
+
+function startPlay() {
+  // p5 requires a user gesture before audio — this handler is one.
+  if (typeof getAudioContext === 'function') userStartAudio();
+  playing = true;
+  setLcd(true);
+  // TODO (Claude Code): if (sound) { sound.setVolume(volume); sound.play(); }
+}
+
+function stopPlay() {
+  playing = false;
+  setLcd(false);
+  // TODO (Claude Code): if (sound && sound.isPlaying()) sound.pause();
+}
+
+function replay() {
+  phase = 0;
+  // TODO (Claude Code): if (sound) { sound.stop(); }
+  startPlay();
+}
+
+/* Volume knob — drag vertically (matches the mockup). --------------------- */
+function wireKnob() {
+  const knob = document.getElementById('knob');
+  let dragging = false, startY = 0, startVol = 0;
+  knob.addEventListener('pointerdown', e => {
+    dragging = true; startY = e.clientY; startVol = volume;
+    knob.setPointerCapture(e.pointerId);
+  });
+  knob.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    volume = Math.max(0, Math.min(1, startVol + (startY - e.clientY) / 150));
+    updateVolumeUI();
+    // TODO (Claude Code): if (sound) sound.setVolume(volume);
+  });
+  knob.addEventListener('pointerup', () => { dragging = false; });
+}
+
+function updateVolumeUI() {
+  const deg = -135 + volume * 270;
+  document.getElementById('knob-ind').style.transform = `translateX(-50%) rotate(${deg}deg)`;
+  document.getElementById('vol-label').innerHTML = 'VOL&nbsp;' + Math.round(volume * 100) + '%';
+}
+
+/* ==========================================================================
+   RENDER: target chips + answer boxes
+   ========================================================================== */
+function renderChips() {
+  const el = document.getElementById('chips');
+  el.innerHTML = '';
+  challenge.targets.forEach(t => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `<b>${t.n}</b>${t.word}`;
+    el.appendChild(chip);
+  });
+}
+
+function renderBoxes() {
+  const el = document.getElementById('boxes');
+  el.innerHTML = '';
+  for (let i = 0; i < challenge.answer.length; i++) {
+    const inp = document.createElement('input');
+    inp.className = 'box';
+    inp.type = 'text';
+    inp.inputMode = 'numeric';
+    inp.maxLength = 1;
+    inp.autocomplete = 'off';
+    inp.dataset.index = i;
+    inp.addEventListener('input', onType);
+    inp.addEventListener('keydown', onKey);
+    inp.addEventListener('focus', () => setStatus('idle'));
+    el.appendChild(inp);
+  }
+}
+
+function boxes() { return [...document.querySelectorAll('.box')]; }
+
+function onType(e) {
+  const i = +e.target.dataset.index;
+  e.target.value = (e.target.value.replace(/\D/g, '').slice(-1) || '');
+  if (e.target.value && i < boxes().length - 1) boxes()[i + 1].focus();
+  setStatus('idle');
+}
+function onKey(e) {
+  const i = +e.target.dataset.index;
+  if (e.key === 'Backspace' && !e.target.value && i > 0) boxes()[i - 1].focus();
+}
+
+/* ==========================================================================
+   VERIFY  (client-side demo only)
+   --------------------------------------------------------------------------
+   TODO (Claude Code): NEVER trust client-side verification for a real CAPTCHA.
+   Send the user's answer + a challenge token to your server and validate
+   there; the correct answer must never reach the browser.
+   ========================================================================== */
+function verify() {
+  const guess = boxes().map(b => b.value).join('');
+  if (guess.length < challenge.answer.length) return setStatus('incomplete');
+  setStatus(guess === challenge.answer ? 'pass' : 'fail');
+}
+
+/* ==========================================================================
+   STATUS + LCD helpers
+   ========================================================================== */
+function setStatus(s) {
+  const map = {
+    idle:       ['#5A6068', 'none',            '#B3B9C1', 'Awaiting answer',        'rgba(255,255,255,.04)', 'var(--edge)'],
+    incomplete: ['#E8B54D', '0 0 6px #E8B54D', '#E8C97D', 'Enter all 3 numbers',    'rgba(232,181,77,.12)',  'rgba(232,181,77,.35)'],
+    fail:       ['#E85D5D', '0 0 8px #E85D5D', '#E8A0A0', 'Mismatch · Try again',   'rgba(232,93,93,.12)',   'rgba(232,93,93,.4)'],
+    pass:       ['#2AD4C8', '0 0 8px #2AD4C8', '#2AD4C8', 'Verified · Human',       'var(--accent-tint)',    'var(--accent-line)'],
+  };
+  const [dot, glow, col, label, bg, border] = map[s] || map.idle;
+  const badge = document.getElementById('badge');
+  badge.style.background = bg;
+  badge.style.borderColor = border;
+  badge.querySelector('.dot').style.background = dot;
+  badge.querySelector('.dot').style.boxShadow = glow;
+  const lbl = document.getElementById('badge-label');
+  lbl.textContent = label; lbl.style.color = col;
+}
+
+function setLcd(live) {
+  const el = document.getElementById('lcd-status');
+  el.style.color = live ? 'var(--accent)' : '#4a6b64';
+  el.innerHTML = live
+    ? '<span class="dot" style="background:var(--accent);box-shadow:0 0 8px var(--accent);animation:ferricPulse 1.2s infinite"></span>LIVE'
+    : '<span class="dot" style="background:#25423c"></span>READY';
+  // swap the big play button glyph
+  const btn = document.getElementById('btn-play');
+  btn.innerHTML = live
+    ? '<span style="display:flex;gap:6px"><span style="width:6px;height:23px;background:var(--accent-text);border-radius:1px"></span><span style="width:6px;height:23px;background:var(--accent-text);border-radius:1px"></span></span>'
+    : '<svg width="24" height="26" viewBox="0 0 24 26" style="margin-left:3px"><polygon points="4,3 21,13 4,23" fill="var(--accent-text)"></polygon></svg>';
+}
+</script>
+</body>
+</html>

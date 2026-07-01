@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:
+    radial-gradient(120% 90% at 50% -10%, #16181d, #0C0D10 60%),
+    #0C0D10;
+    font-family:'Hanken Grotesk',system-ui,sans-serif;color:#E7EAEE}
+  @keyframes ferricPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  input::placeholder{color:#4a5058}
+</style>
+</helmet>
+
+<div ref="{{ setRoot }}" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:48px 24px">
+  <div style="width:100%;max-width:640px;position:relative;padding:28px 28px 26px;border:1px solid #14171B;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0) 6%, rgba(0,0,0,.16) 94%, rgba(0,0,0,.26)), repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, rgba(0,0,0,.02) 1px 3px), linear-gradient(180deg,#3A3F47,#2B2F35);box-shadow:inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 9px rgba(0,0,0,.45), 0 34px 70px -24px rgba(0,0,0,.75)">
+
+    <sc-if value="{{ screws }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="position:absolute;top:11px;left:11px;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7A8088,#34383E 72%);box-shadow:inset 0 1px 1px rgba(255,255,255,.45),0 1px 1px rgba(0,0,0,.5)"><div style="position:absolute;inset:0;margin:auto;width:7px;height:1.5px;background:rgba(0,0,0,.5);transform:rotate(32deg)"></div></div>
+        <div style="position:absolute;top:11px;right:11px;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7A8088,#34383E 72%);box-shadow:inset 0 1px 1px rgba(255,255,255,.45),0 1px 1px rgba(0,0,0,.5)"><div style="position:absolute;inset:0;margin:auto;width:7px;height:1.5px;background:rgba(0,0,0,.5);transform:rotate(-18deg)"></div></div>
+        <div style="position:absolute;bottom:11px;left:11px;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7A8088,#34383E 72%);box-shadow:inset 0 1px 1px rgba(255,255,255,.45),0 1px 1px rgba(0,0,0,.5)"><div style="position:absolute;inset:0;margin:auto;width:7px;height:1.5px;background:rgba(0,0,0,.5);transform:rotate(58deg)"></div></div>
+        <div style="position:absolute;bottom:11px;right:11px;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7A8088,#34383E 72%);box-shadow:inset 0 1px 1px rgba(255,255,255,.45),0 1px 1px rgba(0,0,0,.5)"><div style="position:absolute;inset:0;margin:auto;width:7px;height:1.5px;background:rgba(0,0,0,.5);transform:rotate(12deg)"></div></div>
+      </div>
+    </sc-if>
+
+    <!-- header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:0 6px;margin-bottom:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-weight:700;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#B3B9C1">Audio&nbsp;CAPTCHA</div>
+        <div style="font-size:13px;color:#8b919a">Type the number that follows each target word, in order.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <button onClick="{{ newChallenge }}" style-hover="filter:brightness(1.12)" style="display:flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid #14171B;border-radius:8px;background:linear-gradient(180deg,#33373E,#262A30);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 3px 5px rgba(0,0,0,.4);cursor:pointer;color:#B3B9C1;font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:.14em">↻&nbsp;NEW&nbsp;CHALLENGE</button>
+      </div>
+    </div>
+
+    <!-- LCD scope -->
+    <div style="position:relative;overflow:hidden;border-radius:9px;padding:12px 14px 10px;background:repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, rgba(0,0,0,0) 1px 3px), radial-gradient(120% 100% at 50% 0%, rgba(42,212,200,.08), rgba(0,0,0,0) 60%), linear-gradient(180deg,#08130F,#040B09);box-shadow:inset 0 2px 10px rgba(0,0,0,.85), inset 0 0 0 1px rgba(42,212,200,.14)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:7px;font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:.14em">
+          <sc-if value="{{ playing }}" hint-placeholder-val="{{ true }}">
+            <span style="display:flex;align-items:center;gap:7px;color:var(--accent,#2AD4C8)"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent,#2AD4C8);box-shadow:0 0 8px var(--accent,#2AD4C8);animation:ferricPulse 1.2s infinite"></span>LIVE</span>
+          </sc-if>
+          <sc-if value="{{ notPlaying }}" hint-placeholder-val="{{ true }}">
+            <span style="display:flex;align-items:center;gap:7px;color:#4a6b64"><span style="width:7px;height:7px;border-radius:50%;background:#25423c"></span>READY</span>
+          </sc-if>
+        </div>
+        <span style="font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:.14em;color:rgba(42,212,200,.5)">SCRAMBLED&nbsp;SIGNAL</span>
+      </div>
+      <canvas ref="{{ setScope }}" style="display:block;width:100%;height:116px"></canvas>
+    </div>
+
+    <!-- transport -->
+    <div style="display:flex;align-items:center;gap:16px;margin:20px 4px 22px">
+      <button onClick="{{ replay }}" style-hover="filter:brightness(1.12)" title="Repeat message" style="width:52px;height:52px;flex:none;border:1px solid #14171B;border-radius:50%;background:linear-gradient(180deg,#33373E,#262A30);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 3px 5px rgba(0,0,0,.4);cursor:pointer;color:#B3B9C1;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0">↺</button>
+
+      <button onClick="{{ toggle }}" style-hover="filter:brightness(1.08)" style="width:66px;height:66px;flex:none;border:1px solid #14171B;border-radius:50%;background:linear-gradient(180deg,color-mix(in srgb,var(--accent,#2AD4C8) 30%,#2A2E34),#23262B);box-shadow:0 0 16px var(--accent-glow,rgba(42,212,200,.4)),inset 0 1px 0 rgba(255,255,255,.12),0 4px 8px rgba(0,0,0,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+        <sc-if value="{{ playing }}" hint-placeholder-val="{{ true }}">
+          <span style="display:flex;gap:6px"><span style="width:6px;height:23px;background:var(--accent-text,#EAFFFB);border-radius:1px"></span><span style="width:6px;height:23px;background:var(--accent-text,#EAFFFB);border-radius:1px"></span></span>
+        </sc-if>
+        <sc-if value="{{ notPlaying }}" hint-placeholder-val="{{ true }}">
+          <svg width="24" height="26" viewBox="0 0 24 26" style="margin-left:3px"><polygon points="4,3 21,13 4,23" fill="var(--accent-text,#EAFFFB)"></polygon></svg>
+        </sc-if>
+      </button>
+
+      <div style="flex:1"></div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:7px">
+        <div onPointerDown="{{ knobDown }}" onPointerMove="{{ knobMove }}" onPointerUp="{{ knobUp }}" style="width:56px;height:56px;position:relative;border-radius:50%;background:repeating-conic-gradient(#464C55 0 6deg,#2A2E34 6deg 12deg);box-shadow:0 3px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);cursor:ns-resize;touch-action:none">
+          <div style="position:absolute;inset:7px;border-radius:50%;background:radial-gradient(circle at 38% 30%,#474C54,#20232A 74%);box-shadow:inset 0 1px 2px rgba(255,255,255,.15)"></div>
+          <div style="position:absolute;left:50%;top:6px;width:3px;height:15px;background:var(--accent,#2AD4C8);border-radius:2px;transform-origin:50% 22px;transform:translateX(-50%) rotate({{ knobDeg }});box-shadow:0 0 6px var(--accent-line,rgba(42,212,200,.35))"></div>
+        </div>
+        <span style="font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:.1em;color:#B3B9C1">VOL&nbsp;{{ volPct }}</span>
+      </div>
+    </div>
+
+    <!-- target words -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 14px;border:1px solid #14171B;border-radius:9px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.14));box-shadow:inset 0 1px 0 rgba(255,255,255,.05)">
+      <span style="font-weight:600;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8b919a;flex:none">Target&nbsp;words</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <sc-for list="{{ targets }}" as="w" hint-placeholder-count="3">
+          <span style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 10px;border:1px solid var(--accent-line,rgba(42,212,200,.35));border-radius:999px;background:var(--accent-tint,rgba(42,212,200,.12));font-family:'Spline Sans Mono',monospace;font-size:13px;color:#E7EAEE"><span style="font-weight:700;font-size:10px;color:var(--accent,#2AD4C8)">{{ w.n }}</span>{{ w.word }}</span>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- answer -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px">
+      <span style="font-weight:600;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8b919a;padding-left:2px">The number after each — in order</span>
+      <div style="display:flex;gap:12px">
+        <sc-for list="{{ slots }}" as="slot" hint-placeholder-count="3">
+          <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false" data-index="{{ slot.i }}" ref="{{ regInput }}" onInput="{{ onType }}" onKeyDown="{{ onKey }}" onFocus="{{ clearStatus }}" style-focus="border-color:var(--accent,#2AD4C8);box-shadow:0 0 12px var(--accent-line,rgba(42,212,200,.35)),inset 0 2px 4px rgba(0,0,0,.8)" size="1" style="flex:1 1 0;min-width:0;height:62px;border:1px solid #14171B;border-radius:8px;background:linear-gradient(180deg,#15171B,#23262B);box-shadow:inset 0 2px 4px rgba(0,0,0,.8);color:#E7EAEE;font-family:'Spline Sans Mono',monospace;font-weight:500;font-size:28px;text-align:center;caret-color:var(--accent,#2AD4C8);outline:none" />
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- footer -->
+    <div style="display:flex;align-items:center;gap:14px;padding:0 2px">
+      <div style="display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border-radius:999px;background:{{ badgeBg }};border:1px solid {{ badgeBorder }}">
+        <span style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ badgeDot }};box-shadow:{{ badgeGlow }}"></span>
+        <span style="font-weight:700;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:{{ badgeColor }}">{{ badgeLabel }}</span>
+      </div>
+      <div style="flex:1"></div>
+      <button onClick="{{ verify }}" style-hover="filter:brightness(1.09)" style="border:1px solid #14171B;border-radius:8px;padding:14px 30px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent,#2AD4C8) 28%,#2A2E34),#23262B);box-shadow:0 0 12px var(--accent-glow,rgba(42,212,200,.4)),inset 0 1px 0 rgba(255,255,255,.12);cursor:pointer;color:var(--accent-text,#EAFFFB);font-weight:700;font-size:14px;letter-spacing:.04em">Verify</button>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:720,&quot;height&quot;:640},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2AD4C8&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#2AD4C8&quot;,&quot;#FF7A3D&quot;,&quot;#9B8CFF&quot;,&quot;#E84D6B&quot;],&quot;section&quot;:&quot;Look&quot;},&quot;screws&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;scramble&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.6,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;unit&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  state = { playing: false, volume: 0.62, answer: ['','',''], status: 'idle' };
+  targets = ['blue', 'river', 'chair'];
+  code = '381';
+  t = 0;
+  inputs = [];
+
+  setRoot = (el) => { this.root = el; if (el) this.applyAccent(); };
+  setScope = (el) => { this.scope = el; };
+  regInput = (el) => { if (el) this.inputs[+el.dataset.index] = el; };
+
+  rgba(hex, a) {
+    hex = (hex || '#2AD4C8').replace('#','');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const n = parseInt(hex, 16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+
+  applyAccent() {
+    const a = this.props.accent || '#2AD4C8';
+    const r = this.root; if (!r) return;
+    r.style.setProperty('--accent', a);
+    r.style.setProperty('--accent-tint', this.rgba(a, .12));
+    r.style.setProperty('--accent-line', this.rgba(a, .35));
+    r.style.setProperty('--accent-glow', this.rgba(a, .4));
+    r.style.setProperty('--accent-text', '#EAFFFB');
+  }
+
+  componentDidMount() { this.applyAccent(); this.raf = requestAnimationFrame(this.loop); }
+  componentDidUpdate() { this.applyAccent(); }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); }
+
+  loop = () => {
+    const c = this.scope;
+    if (c && c.clientWidth) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = c.clientWidth, h = c.clientHeight;
+      if (c.width !== Math.round(w*dpr)) { c.width = Math.round(w*dpr); c.height = Math.round(h*dpr); }
+      const ctx = c.getContext('2d');
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,w,h);
+      const accent = this.props.accent || '#2AD4C8';
+      const scr = this.props.scramble ?? 0.6;
+      ctx.strokeStyle = this.rgba(accent,.14); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+      const playing = this.state.playing;
+      const amp = (playing ? 1 : 0.05) * (0.3 + 0.7*this.state.volume) * h * 0.42;
+      ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+      ctx.shadowColor = accent; ctx.shadowBlur = playing ? 9 : 3;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 2) {
+        const p = x / w;
+        let y = Math.sin(p*20 + this.t*3.1)*0.5 + Math.sin(p*46 - this.t*2.0)*0.28 + Math.sin(p*9 + this.t*1.2)*0.35;
+        const nz = ((Math.sin(x*127.1 + this.t*13.0) * 43758.5453) % 1);
+        y += nz * scr * 0.9;
+        const env = 0.55 + 0.45 * Math.sin(p*7 - this.t*1.5);
+        y *= env;
+        const yy = h/2 - y*amp;
+        x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+      }
+      ctx.stroke(); ctx.shadowBlur = 0;
+    }
+    this.t += this.state.playing ? 0.05 : 0.006;
+    this.raf = requestAnimationFrame(this.loop);
+  };
+
+  toggle = () => this.setState(s => ({ playing: !s.playing }));
+  replay = () => { this.t = 0; this.setState({ playing: true }); };
+  clearStatus = () => { if (this.state.status !== 'idle') this.setState({ status: 'idle' }); };
+  newChallenge = () => {
+    this.t = 0;
+    this.inputs.forEach(i => { if (i) i.value = ''; });
+    this.setState({ answer: ['','',''], status: 'idle', playing: true });
+  };
+
+  onType = (e) => {
+    const i = +e.target.dataset.index;
+    const v = (e.target.value.replace(/\D/g,'').slice(-1) || '');
+    e.target.value = v;
+    const answer = [...this.state.answer]; answer[i] = v;
+    this.setState({ answer, status: 'idle' });
+    if (v && i < 2 && this.inputs[i+1]) this.inputs[i+1].focus();
+  };
+  onKey = (e) => {
+    const i = +e.target.dataset.index;
+    if (e.key === 'Backspace' && !e.target.value && i > 0 && this.inputs[i-1]) this.inputs[i-1].focus();
+  };
+  verify = () => {
+    const guess = this.state.answer.join('');
+    if (guess.length < 3) { this.setState({ status: 'incomplete' }); return; }
+    this.setState({ status: guess === this.code ? 'pass' : 'fail' });
+  };
+
+  knobDown = (e) => { this.knobEl = e.currentTarget; this.knobEl.setPointerCapture(e.pointerId); this.dragY = e.clientY; this.startVol = this.state.volume; this.dragging = true; };
+  knobMove = (e) => {
+    if (!this.dragging) return;
+    const dv = (this.dragY - e.clientY) / 150;
+    const vol = Math.max(0, Math.min(1, this.startVol + dv));
+    this.setState({ volume: vol });
+  };
+  knobUp = () => { this.dragging = false; };
+
+  renderVals() {
+    const accent = this.props.accent || '#2AD4C8';
+    const S = this.state.status;
+    let badgeBg, badgeBorder, badgeColor, badgeDot, badgeGlow, badgeLabel;
+    if (S === 'pass') {
+      badgeBg = this.rgba(accent,.14); badgeBorder = this.rgba(accent,.4); badgeColor = accent; badgeDot = accent; badgeGlow = `0 0 8px ${accent}`; badgeLabel = 'Verified · Human';
+    } else if (S === 'fail') {
+      badgeBg = 'rgba(232,93,93,.12)'; badgeBorder = 'rgba(232,93,93,.4)'; badgeColor = '#E8A0A0'; badgeDot = '#E85D5D'; badgeGlow = '0 0 8px #E85D5D'; badgeLabel = 'Mismatch · Try again';
+    } else if (S === 'incomplete') {
+      badgeBg = 'rgba(232,181,77,.12)'; badgeBorder = 'rgba(232,181,77,.35)'; badgeColor = '#E8C97D'; badgeDot = '#E8B54D'; badgeGlow = '0 0 6px #E8B54D'; badgeLabel = 'Enter all 3 numbers';
+    } else {
+      badgeBg = 'rgba(255,255,255,.04)'; badgeBorder = '#14171B'; badgeColor = '#B3B9C1'; badgeDot = '#5A6068'; badgeGlow = 'none'; badgeLabel = 'Awaiting answer';
+    }
+    return {
+      playing: this.state.playing,
+      notPlaying: !this.state.playing,
+      screws: this.props.screws ?? true,
+      targets: this.targets.map((word, i) => ({ word, n: i + 1 })),
+      slots: [{i:0},{i:1},{i:2}],
+      volPct: Math.round(this.state.volume*100) + '%',
+      knobDeg: (-135 + this.state.volume*270).toFixed(1) + 'deg',
+      setRoot: this.setRoot, setScope: this.setScope, regInput: this.regInput,
+      toggle: this.toggle, replay: this.replay, newChallenge: this.newChallenge,
+      onType: this.onType, onKey: this.onKey, clearStatus: this.clearStatus, verify: this.verify,
+      knobDown: this.knobDown, knobMove: this.knobMove, knobUp: this.knobUp,
+      badgeBg, badgeBorder, badgeColor, badgeDot, badgeGlow, badgeLabel,
+    };
+  }
+}
+</script>
+</body>
+</html>
